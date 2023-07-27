@@ -9,6 +9,7 @@ Paper https://arxiv.org/abs/2011.08785
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 import torch
 from omegaconf import DictConfig, ListConfig
@@ -42,6 +43,7 @@ class Padim(AnomalyModule):
         backbone: str,
         pre_trained: bool = True,
         n_features: int | None = None,
+        kwargs: dict[str, Any] = {}
     ) -> None:
         super().__init__()
 
@@ -52,6 +54,7 @@ class Padim(AnomalyModule):
             pre_trained=pre_trained,
             layers=layers,
             n_features=n_features,
+            kwargs=kwargs
         ).eval()
 
         self.stats: list[Tensor] = []
@@ -126,6 +129,7 @@ class PadimLightning(Padim):
             backbone=hparams.model.backbone,
             pre_trained=hparams.model.pre_trained,
             n_features=hparams.model.n_features if "n_features" in hparams.model else None,
+            kwargs=hparams.model.kwargs if "kwargs" in hparams.model else {}
         )
         self.hparams: DictConfig | ListConfig  # type: ignore
         self.save_hyperparameters(hparams)

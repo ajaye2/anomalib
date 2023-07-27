@@ -21,6 +21,8 @@ def dryrun_find_featuremap_dims(
     """
 
     dryrun_input = torch.empty(1, 3, *input_size)
+    if torch.cuda.is_available():
+        dryrun_input = dryrun_input.cuda()
     dryrun_features = feature_extractor(dryrun_input)
     return {
         layer: {"num_features": dryrun_features[layer].shape[1], "resolution": dryrun_features[layer].shape[2:]}

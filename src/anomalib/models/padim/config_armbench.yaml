@@ -2,7 +2,7 @@ dataset:
   name: mvtec
   format: mvtec
   path: ./datasets/MVTec
-  category: bottle
+  # category: bottle
   task: segmentation
   train_batch_size: 32
   eval_batch_size: 32
@@ -25,6 +25,33 @@ dataset:
     use_random_tiling: False
     random_tile_count: 16
 
+dataset:
+  name: armbench
+  format: folder
+  path: /home/ec2-user/vision_foundation_models_for_manipulation/Image defect/dataset
+  normal_dir: normal # name of the folder containing normal images.
+  abnormal_dir: abnormal # name of the folder containing abnormal images.
+  normal_test_dir: null # name of the folder containing normal test images.
+  task: segmentation # classification or segmentation
+  # mask: <path/to/mask/annotations> #optional
+  extensions: null
+  split_ratio: 0.2 # ratio of the normal images that will be used to create a test split
+  image_size: 256
+  train_batch_size: 32
+  test_batch_size: 32
+  num_workers: 8
+  transform_config:
+    train: null
+    val: null
+  create_validation_set: true
+  tiling:
+    apply: false
+    tile_size: null
+    stride: null
+    remove_border_count: 0
+    use_random_tiling: False
+    random_tile_count: 16
+
 model:
   name: padim
   backbone: resnet18
@@ -39,8 +66,6 @@ metrics:
   image:
     - F1Score
     - AUROC
-    - Recall
-    - Precision
   pixel:
     - F1Score
     - AUROC

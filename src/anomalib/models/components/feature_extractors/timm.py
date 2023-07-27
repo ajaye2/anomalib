@@ -56,6 +56,8 @@ class TimmFeatureExtractor(nn.Module):
             exportable=True,
             out_indices=self.idx,
         )
+        if torch.cuda.is_available():
+            self.feature_extractor = self.feature_extractor.cuda()
         self.out_dims = self.feature_extractor.feature_info.channels()
         self._features = {layer: torch.empty(0) for layer in self.layers}
 

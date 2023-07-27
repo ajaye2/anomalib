@@ -20,6 +20,7 @@ from anomalib.pre_processing import Tiler
 _N_FEATURES_DEFAULTS = {
     "resnet18": 100,
     "wide_resnet50_2": 550,
+    "internimage": 7
 }
 
 
@@ -65,13 +66,35 @@ class PadimModel(nn.Module):
         backbone: str = "resnet18",
         pre_trained: bool = True,
         n_features: int | None = None,
+        kwargs: dict[str, str] = {},
     ) -> None:
         super().__init__()
         self.tiler: Tiler | None = None
 
         self.backbone = backbone
         self.layers = layers
-        self.feature_extractor = FeatureExtractor(backbone=self.backbone, layers=layers, pre_trained=pre_trained)
+        if backbone == "internimage":
+            import sys
+            sys.path.append('/home/ec2-user/vision_foundation_models_for_manipulation')
+            from utils import get_intern_image_config, IntermediateLayerGetterTorch
+            sys.path.append('/home/ec2-user/vision_foundation_models_for_manipulation/InternImage/classification')
+            from models import build_model
+            
+            config_internimage       = get_intern_image_config(kwargs['config_path_internimage'], kwargs['model_weights_interimage'], layers)
+            model                    = build_model(config_internimage)
+            checkpoint               = torch.load(config_internimage.MODEL.RESUME, map_location='cpu')
+            model.load_state_dict(checkpoint['model'], strict=False)
+            if torch.cuda.is_available():
+                model = model.cuda()
+            model.eval()
+            return_layers            = {k: k for k in layers}
+            self.feature_extractor   = IntermediateLayerGetterTorch(model, return_layers=return_layers, keep_output=True, return_only_layers=True)
+            
+        else:
+            self.feature_extractor = FeatureExtractor(backbone=self.backbone, layers=layers, pre_trained=pre_trained)
+            if torch.cuda.is_available():
+                self.feature_extractor = self.feature_extractor.cuda()
+            
         self.n_features_original, self.n_patches = _deduce_dims(self.feature_extractor, input_size, self.layers)
 
         n_features = n_features or _N_FEATURES_DEFAULTS.get(self.backbone)
@@ -127,6 +150,8 @@ class PadimModel(nn.Module):
 
         with torch.no_grad():
             features = self.feature_extractor(input_tensor)
+            # for feature_layer in features.keys():
+            #     features[feature_layer] = torch.mean(features[feature_layer], axis=-1).unsqueeze( -1)
             embeddings = self.generate_embedding(features)
 
         if self.tiler:
